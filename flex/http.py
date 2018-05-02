@@ -16,6 +16,7 @@ from six.moves import urllib_parse as urlparse
 import json
 
 from flex.constants import EMPTY
+import xmltodict
 
 try:
     import django.http.request
@@ -111,6 +112,11 @@ class Request(URLMixin):
                 raise JSONDecodeError(str(e))
         elif self.content_type == 'application/x-www-form-urlencoded':
             return dict(urlparse.parse_qsl(self.body))
+        elif self.content_type and self.content_type.startswith('application/xml'):
+            if isinstance(self.body, six.binary_type):
+                return xmltodict.parse(self.body.decode('utf-8'))
+            else:
+                return xmltodict.parse(self.body)
         else:
             raise NotImplementedError("No parser for content type")
 
@@ -329,6 +335,11 @@ class Response(URLMixin):
                     # this will only be True for Python3+
                     raise e
                 raise JSONDecodeError(str(e))
+        elif self.content_type and self.content_type.startswith('application/xml'):
+            if isinstance(self.content, six.binary_type):
+                return xmltodict.parse(six.text_type(self.content, encoding='utf-8'), xml_attribs=False)
+            else:
+                return xmltodict.parse(self.content, xml_attribs=False)
         raise NotImplementedError("No content negotiation for this content type")
 
 
